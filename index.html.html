@@ -312,6 +312,28 @@ tr.flash td{animation:flashtd .7s ease-out}
 @keyframes shake{0%,100%{transform:translateX(0)}25%{transform:translateX(-6px)}75%{transform:translateX(6px)}}
 .pay-note{font-size:11px;color:var(--muted-2);margin:10px 4px 0;line-height:1.5}
 .pay-note code{background:var(--glass-2);padding:1px 5px;border-radius:5px;font-size:10.5px}
+/* KYC */
+.kyc-hero{display:flex;gap:14px;align-items:center;padding:18px;border-radius:var(--radius)}
+.kyc-ic{font-size:34px;flex-shrink:0}
+.kyc-badge{display:inline-block;font-size:11.5px;font-weight:700;padding:4px 10px;border-radius:20px}
+.kyc-badge.ok{background:rgba(25,230,160,.16);color:#19e6a0;border:1px solid rgba(25,230,160,.3)}
+.kyc-badge.pend{background:rgba(255,177,60,.16);color:#ffb13c;border:1px solid rgba(255,177,60,.3)}
+.kyc-badge.no{background:rgba(255,77,109,.16);color:#ff4d6d;border:1px solid rgba(255,77,109,.3)}
+.kyc-l{display:block;font-size:12px;color:var(--muted);margin:10px 2px 5px;font-weight:600}
+.kyc-form textarea.auth-in{resize:vertical;font-family:'Sora'}
+.kyc-up-grid{display:grid;grid-template-columns:1fr 1fr;gap:12px;margin-top:14px}
+.kyc-up{cursor:pointer}
+.kyc-up-box{position:relative;height:120px;border:1.5px dashed var(--stroke-2);border-radius:12px;display:flex;flex-direction:column;align-items:center;justify-content:center;gap:3px;background:var(--glass);transition:.2s;overflow:hidden}
+.kyc-up-box span{font-size:24px}
+.kyc-up-box b{font-size:13px}
+.kyc-up-box small{font-size:10.5px;color:var(--muted-2)}
+.kyc-up-box.filled{border-style:solid;border-color:var(--accent);padding:0}
+.kyc-up-box:hover{border-color:var(--accent)}
+.kyc-up-ok{position:absolute;top:6px;right:6px;width:22px;height:22px;border-radius:50%;background:#19e6a0;color:#04121a;display:grid;place-items:center;font-weight:800;font-size:13px}
+.kyc-readonly{margin-top:12px;display:grid;gap:8px}
+.kyc-readonly>div{display:flex;justify-content:space-between;gap:10px;font-size:13px;border-bottom:1px solid var(--stroke);padding-bottom:6px}
+.kyc-readonly span{color:var(--muted)}
+.kyc-readonly b{text-align:right}
 .btn-sub{width:100%;margin-top:18px;padding:15px;border:none;border-radius:15px;background:linear-gradient(120deg,#ffd75e,#ff9a3c);color:#2a1500;font-weight:800;font-size:15px;font-family:'Sora';cursor:pointer;box-shadow:0 10px 28px rgba(255,170,60,.3);transition:.2s;letter-spacing:.3px}
 .btn-sub:hover{transform:translateY(-1px);filter:brightness(1.05)}
 .btn-ghost{background:var(--glass-2);border:1px solid var(--stroke-2);color:var(--text);padding:9px 16px;border-radius:11px;font-weight:600;font-size:12.5px;cursor:pointer;font-family:'Sora'}
@@ -851,6 +873,7 @@ const CHANNELS={
   ],
   'ACCOUNT':[
     {id:'premium',ic:'👑',name:'go-premium',desc:'Unlock VIP signals, AI scanner & whale alerts'},
+    {id:'kyc',ic:'🪪',name:'verify-identity',desc:'Optional identity verification (KYC)'},
   ]
 };
 const CHAN_MAP={};Object.values(CHANNELS).flat().forEach(c=>CHAN_MAP[c.id]=c);
@@ -1335,6 +1358,7 @@ function renderCurrent(){
   if(id==='group-rules')return renderRules(c);
   if(id==='settings')return renderSettings(c);
   if(id==='premium')return renderPremium(c);
+  if(id==='kyc')return renderKyc(c);
   // signal channels
   return renderSignalChannel(c,id);
 }
@@ -2050,6 +2074,134 @@ function renderPremium(c){
 }
 function selectPlan(id){SUB.plan=id;document.querySelectorAll('#planGrid .plan').forEach(p=>p.classList.toggle('on',p.dataset.plan===id));}
 function selectPay(id){SUB.pay=id;document.querySelectorAll('#payGrid .pay').forEach(p=>p.classList.toggle('on',p.dataset.pay===id));}
+
+/* ===================== KYC / IDENTITY VERIFICATION (optional) ===================== */
+const KYC={record:null,front:null,back:null};
+async function loadKyc(){
+  if(!AUTH_ENABLED||!AUTH.user)return null;
+  try{const {data}=await sb.from('kyc').select('*').eq('user_id',AUTH.user.id).single();KYC.record=data||null;}
+  catch(e){KYC.record=null;}
+  return KYC.record;
+}
+function kycStatusBadge(s){
+  if(s==='approved')return '<span class="kyc-badge ok">✓ Verified</span>';
+  if(s==='rejected')return '<span class="kyc-badge no">✕ Rejected — please re-submit</span>';
+  if(s==='pending')return '<span class="kyc-badge pend">⏳ Under review</span>';
+  return '';
+}
+async function renderKyc(c){
+  // not logged in -> ask to sign in
+  if(AUTH_ENABLED && !AUTH.user){
+    c.innerHTML=`${accountBar()}<div class="glass card" style="text-align:center;padding:30px 18px">
+      <div style="font-size:40px">🪪</div>
+      <h2 style="margin:8px 0">Identity Verification</h2>
+      <p style="color:var(--muted);max-width:440px;margin:0 auto 16px">Verification is optional. Please sign in first to submit your KYC details.</p>
+      <button class="btn-sub" style="max-width:240px;margin:0 auto" onclick="openAuth('login')">Sign in →</button>
+    </div>`;
+    return;
+  }
+  c.innerHTML=`${accountBar()}<div class="glass card" style="text-align:center;padding:24px"><div class="spin"></div><p style="color:var(--muted);margin-top:10px">Loading your verification status…</p></div>`;
+  await loadKyc();
+  const r=KYC.record;
+  const locked = r && (r.status==='pending'||r.status==='approved');
+  c.innerHTML=`
+  ${accountBar()}
+  <div class="kyc-hero glass">
+    <div class="kyc-ic">🪪</div>
+    <div>
+      <h1 style="font-size:20px;margin-bottom:4px">Identity Verification <span class="tag">optional</span></h1>
+      <p style="color:var(--muted);font-size:13px">Verify your identity for a trusted account badge. This is optional and does not affect your PRO access.</p>
+      ${r?`<div style="margin-top:8px">${kycStatusBadge(r.status)}</div>`:''}
+    </div>
+  </div>
+
+  <div class="glass card" style="margin-top:14px">
+    ${locked?`<div class="kyc-locked">
+        <p style="color:var(--muted);font-size:13.5px;line-height:1.6">
+        ${r.status==='approved'?'✅ Your identity is <b>verified</b>. Thank you!':'⏳ Your details were submitted and are <b>under review</b>. We will update your status soon.'}
+        </p>
+        <div class="kyc-readonly">
+          <div><span>Name</span><b>${r.full_name||'—'}</b></div>
+          <div><span>CNIC</span><b>${r.cnic||'—'}</b></div>
+          <div><span>Mobile</span><b>${r.mobile||'—'}</b></div>
+          <div><span>Address</span><b>${r.address||'—'}</b></div>
+        </div>
+        ${r.status==='approved'?'':'<button class="btn-ghost sm" style="margin-top:12px" onclick="kycAllowResubmit()">Edit & re-submit</button>'}
+      </div>`
+    :`
+    <div class="kyc-form">
+      <label class="kyc-l">Full name (as on CNIC)</label>
+      <input class="auth-in" id="kycName" placeholder="e.g. Hassan Raza" value="${r&&r.full_name?r.full_name:''}">
+
+      <label class="kyc-l">CNIC number</label>
+      <input class="auth-in" id="kycCnic" inputmode="numeric" placeholder="35202-1234567-1" value="${r&&r.cnic?r.cnic:''}">
+
+      <label class="kyc-l">Mobile number</label>
+      <input class="auth-in" id="kycMobile" inputmode="tel" placeholder="03XX-XXXXXXX" value="${r&&r.mobile?r.mobile:''}">
+
+      <label class="kyc-l">Address</label>
+      <textarea class="auth-in" id="kycAddr" rows="2" placeholder="House, street, area, city">${r&&r.address?r.address:''}</textarea>
+
+      <div class="kyc-up-grid">
+        <div class="kyc-up" onclick="document.getElementById('kycFront').click()">
+          <input type="file" id="kycFront" accept="image/*" hidden onchange="kycPick('front',this)">
+          <div class="kyc-up-box" id="kycFrontBox"><span>📷</span><b>CNIC Front</b><small>tap to upload</small></div>
+        </div>
+        <div class="kyc-up" onclick="document.getElementById('kycBack').click()">
+          <input type="file" id="kycBack" accept="image/*" hidden onchange="kycPick('back',this)">
+          <div class="kyc-up-box" id="kycBackBox"><span>📷</span><b>CNIC Back</b><small>tap to upload</small></div>
+        </div>
+      </div>
+
+      <div id="kycMsg" class="auth-msg"></div>
+      <button class="btn-sub" id="kycBtn" style="margin-top:10px" onclick="submitKyc()">Submit for verification</button>
+      <div class="pay-note" style="margin-top:10px">🔒 Your documents are stored securely and only reviewed by our team. Verification is optional.</div>
+    </div>`}
+  </div>
+  <div style="height:90px"></div>`;
+}
+let KYC_RESUBMIT=false;
+function kycAllowResubmit(){KYC_RESUBMIT=true;KYC.record.status='editing';renderKyc(document.getElementById('content'));}
+function kycPick(side,inp){
+  const f=inp.files&&inp.files[0];if(!f)return;
+  if(f.size>5*1024*1024){toast('Image too large (max 5MB)');inp.value='';return;}
+  KYC[side]=f;
+  const box=document.getElementById(side==='front'?'kycFrontBox':'kycBackBox');
+  const url=URL.createObjectURL(f);
+  box.innerHTML=`<img src="${url}" style="width:100%;height:100%;object-fit:cover;border-radius:10px"><div class="kyc-up-ok">✓</div>`;
+  box.classList.add('filled');
+}
+async function submitKyc(){
+  const msg=document.getElementById('kycMsg');
+  const name=document.getElementById('kycName').value.trim();
+  const cnic=document.getElementById('kycCnic').value.trim();
+  const mobile=document.getElementById('kycMobile').value.trim();
+  const addr=document.getElementById('kycAddr').value.trim();
+  if(!name||!cnic||!mobile||!addr){msg.textContent='Please fill all fields.';return;}
+  if(!KYC.record && (!KYC.front||!KYC.back)){msg.textContent='Please upload both CNIC front and back photos.';return;}
+  if(!AUTH_ENABLED||!AUTH.user){toast('Please sign in first');openAuth('login');return;}
+  const btn=document.getElementById('kycBtn');btn.disabled=true;btn.textContent='Uploading…';msg.textContent='';
+  try{
+    let frontUrl=KYC.record?KYC.record.front_url:null, backUrl=KYC.record?KYC.record.back_url:null;
+    const up=async(file,tag)=>{
+      const ext=(file.name.split('.').pop()||'jpg').toLowerCase();
+      const path=`${AUTH.user.id}/${tag}_${Date.now()}.${ext}`;
+      const {error}=await sb.storage.from('kyc-docs').upload(path,file,{upsert:true});
+      if(error)throw error;return path;
+    };
+    if(KYC.front)frontUrl=await up(KYC.front,'front');
+    if(KYC.back)backUrl=await up(KYC.back,'back');
+    const row={user_id:AUTH.user.id,email:AUTH.user.email,full_name:name,cnic,mobile,address:addr,front_url:frontUrl,back_url:backUrl,status:'pending'};
+    const {error}=await sb.from('kyc').upsert(row,{onConflict:'user_id'});
+    if(error)throw error;
+    KYC.front=null;KYC.back=null;KYC_RESUBMIT=false;
+    toast('Submitted for verification ✓');
+    await loadKyc();renderKyc(document.getElementById('content'));
+  }catch(e){
+    msg.textContent='Could not submit: '+(e.message||'try again');
+    btn.disabled=false;btn.textContent='Submit for verification';
+  }
+}
 
 function openPayModal(){
   if(AUTH_ENABLED&&!AUTH.user){toast('Please sign in first to activate your membership');openAuth('signup');return;}
