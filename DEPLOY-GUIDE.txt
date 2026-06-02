@@ -1,0 +1,104 @@
+# CORE CRYPTO — WEBSITE LAUNCH (Vercel + GitHub + Supabase)
+
+App ab website ban kar live hogi. Log browser se khol kar use karenge — koi install nahi.
+Supabase (login/email/PRO) wahi rahega, kuch change nahi. ~15 minute.
+
+Files folder `corecrypto-web` mein hain — yahi upload karni hain.
+
+================================================================
+TAREEQA 1 — SABSE AASAAN (Vercel pe direct drag-drop, no GitHub)
+================================================================
+
+1. https://vercel.com pe jao → "Sign Up" (GitHub/email se free)
+2. Login ke baad → top-right "Add New..." → "Project"
+3. Neeche "Deploy" options mein "Browse" / drag-drop area dhoondo
+   (ya https://vercel.com/new pe jao)
+4. Apne computer se poora `corecrypto-web` FOLDER drag karke drop karo
+   (ya zip bana kar upload — Vercel khud kholega)
+5. "Deploy" dabao → 1 min mein live ho jayega
+6. Vercel ek URL dega jaise:  https://corecrypto-web.vercel.app
+   → yahi aapki website hai! Khol kar dekho.
+
+> Note: Vercel CLI bhi hai par drag-drop sabse aasaan hai non-developers ke liye.
+
+================================================================
+TAREEQA 2 — GitHub ke zariye (auto-update, professional)
+================================================================
+
+A) GitHub pe code daalo:
+1. https://github.com → Sign in → "New repository"
+2. Name: corecrypto-web → "Create repository"
+3. "uploading an existing file" link pe click
+4. `corecrypto-web` folder ki SAARI files drag karo (index.html, icons,
+   manifest.json, sw.js, vercel.json) → "Commit changes"
+
+B) Vercel se connect:
+1. https://vercel.com → "Add New..." → "Project"
+2. "Import Git Repository" → apna corecrypto-web repo choose karo
+3. Framework Preset: "Other" (ya khud detect karega) → "Deploy"
+4. Live URL mil jayega.
+
+> Faida: aage jab bhi GitHub pe nayi index.html upload karoge,
+> Vercel KHUD website update kar dega. (App ki tarah har baar manual nahi.)
+
+================================================================
+ZAROORI — SUPABASE REDIRECT URL (warna login pe issue ho sakta hai)
+================================================================
+
+Website ka domain Supabase mein add karna hai, taake email confirm /
+password reset links sahi chalein:
+
+1. Supabase dashboard → Authentication → URL Configuration
+   (ya: Authentication → Settings)
+2. "Site URL" mein apna Vercel URL daalo:
+       https://corecrypto-web.vercel.app
+3. "Redirect URLs" mein bhi add karo (Add URL):
+       https://corecrypto-web.vercel.app/**
+4. Save.
+
+(Agar apna custom domain laga rahe ho — niche dekho — to wo bhi yahin add karna.)
+
+================================================================
+APNA NAAM WALA DOMAIN (optional, professional)
+================================================================
+
+Default: https://corecrypto-web.vercel.app  (free, theek hai)
+
+Apna domain (jaise corecrypto.com) lagana ho:
+1. Koi domain khareedo (Namecheap, GoDaddy, etc.)
+2. Vercel → apna project → Settings → Domains → "Add"
+3. Apna domain likho → Vercel jo DNS records de, wo apne domain provider
+   ke DNS mein daal do → Vercel khud verify kar lega.
+4. Phir Supabase URL Configuration mein bhi naya domain add karna (upar wala step).
+
+================================================================
+TEST (live hone ke baad)
+================================================================
+
+1. Vercel URL browser mein kholo → bomb intro → login/signup screen
+2. Sign up karo → Supabase → Authentication → Users mein email aa jaye
+3. Supabase → profiles → us user ka is_pro = true, pro_until = future date
+4. Website pe GO PRO → Refresh → VIP unlock ✅
+
+Bilkul app jaisa — bas ab browser mein, kahin bhi, kisi bhi device pe.
+
+================================================================
+WEBSITE UPDATE KAISE KARNA HO (aage)
+================================================================
+
+- Tareeqa 1 (drag-drop) use kiya: Vercel project → nayi index.html dobara
+  upload/redeploy karo.
+- Tareeqa 2 (GitHub) use kiya: GitHub pe nayi index.html upload karo →
+  Vercel KHUD update kar dega. (Recommended)
+
+================================================================
+APP + WEBSITE DONO SAATH
+================================================================
+
+- Android APK: pehle se ban chuki hai (direct baant sakte ho)
+- Website: ab Vercel pe live
+- Dono SAME Supabase use karte hain — yani ek hi jagah se saare users +
+  payments + PRO manage honge. Customer chahe app se aaye ya website se,
+  aap usi profiles table se PRO de doge.
+
+Done. Website launch ke liye taiyaar! 🚀
